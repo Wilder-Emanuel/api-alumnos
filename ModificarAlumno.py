@@ -5,20 +5,16 @@ def lambda_handler(event, context):
     # Parsear el cuerpo de la solicitud JSON
     tenant_id = event['body']['tenant_id']
     alumno_id = event['body']['alumno_id']
+    alumno_datos = event['body']['alumno_datos']
 
     # Conexión a DynamoDB y selección de la tabla
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table('t_alumnos')
 
-    # Construcción de la expresión de actualización con los nuevos datos
-    update_expression = "set "
-    expression_attribute_values = {}
-    for key, value in nuevos_datos.items():
-        update_expression += f"alumno_datos.{key} = :{key}, "
-        expression_attribute_values[f":{key}"] = value
-    update_expression = update_expression.rstrip(", ")
-
     # Actualización de los datos del alumno
+    update_expression = "SET " + ", ".join(f"alumno_datos.{key} = :{key}" for key in alumno_datos.keys())
+    expression_attribute_values = {f":{key}": value for key, value in alumno_datos.items()}
+
     response = table.update_item(
         Key={
             'tenant_id': tenant_id,
@@ -29,7 +25,6 @@ def lambda_handler(event, context):
         ReturnValues="UPDATED_NEW"
     )
 
-    # Salida (json)
     return {
         'statusCode': 200,
         'response': response
